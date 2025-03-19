@@ -1,11 +1,10 @@
-from django.shortcuts import render
-from django.contrib.auth.models import User
-from django.contrib.auth.hashers import make_password  # Fixed typo
-from django.http import JsonResponse
+from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import make_password
+from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status  # Fixed typo
 
+User = get_user_model()
 # Create your views here.
 
 

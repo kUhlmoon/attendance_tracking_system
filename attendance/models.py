@@ -19,4 +19,4 @@ class Attendance(models.Model):
         CustomUser, on_delete=models.SET_NULL, null=True, related_name="recorded_attendance")
 
     def __str__(self):
-        return f"{self.student.username} - {self.status} ({self.date})"
+        return f"{self.student.user.username} - {self.status} ({self.date})"

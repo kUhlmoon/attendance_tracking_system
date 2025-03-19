@@ -10,6 +10,8 @@ class CustomUser(AbstractUser):
         ('tutor', 'Tutor'),
         ('admin', 'Admin')
     ]
+    student_id = models.CharField(
+        max_length=20, unique=True, null=True, blank=True)
     role = models.CharField(
         max_length=10, choices=ROLE_CHOICES, default='student')
 
