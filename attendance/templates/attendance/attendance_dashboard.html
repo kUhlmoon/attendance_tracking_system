@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Attendance Records</h2>
+
+    {% if records %}
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in records %}
+            <tr>
+                <td>{{ record.student.student_id }}</td>
+                <td>{{ record.student.username }}</td>
+                <td>{{ record.date }}</td>
+                <td>{{ record.time }}</td>
+                <td>
+                    {% if record.status == "present" %}
+                    <span class="badge bg-success">Present</span>
+                    {% elif record.status == "late" %}
+                    <span class="badge bg-warning">Late</span>
+                    {% elif record.status == "absent" %}
+                    <span class="badge bg-danger">Absent</span>
+                    {% else %}
+                    <span class="badge bg-secondary">{{ record.status }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="alert alert-warning">No attendance records found.</p>
+    {% endif %}
+
+    <div class="mt-3">
+        <a href="{% url 'upload_attendance' %}" class="btn btn-primary">Upload More Attendance</a>
+    </div>
+</div>
+{% endblock %}
+

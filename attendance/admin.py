@@ -5,7 +5,7 @@ from .models import Attendance
 
 
 class AttendanceAdmin(admin.ModelAdmin):
-    list_display = ('student', 'date', 'status', 'recorded_by')
+    list_display = ('student', 'date', 'status')
     list_filter = ('status', 'date')
 
 
