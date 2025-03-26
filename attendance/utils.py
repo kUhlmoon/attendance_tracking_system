@@ -75,3 +75,21 @@ def process_csv(file_path):
                 error_file.write("\n".join(errors))
 
         print(f"Successfully saved {records_saved} records.")
+
+
+def register_students_for_unit(unit_code, student_ids):
+    from attendance.models import Unit
+    from users.models import CustomUser
+
+    unit, created = Unit.objects.get_or_create(code=unit_code)
+
+    for student_id in student_ids:
+        try:
+            student = CustomUser.objects.get(student_id=student_id)
+            unit.students.add(student)
+            print(
+                f"Registered {student.username} ({student_id}) to {unit.name}")
+        except CustomUser.DoesNotExist:
+            print(f"Student ID {student_id} not found.")
+
+    print("Registration process completed.")
