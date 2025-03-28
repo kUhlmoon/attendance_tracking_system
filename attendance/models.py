@@ -13,7 +13,8 @@ class Attendance(models.Model):
     student = models.ForeignKey(
         CustomUser, on_delete=models.CASCADE, limit_choices_to={'role': 'student'})
     date = models.DateField(auto_now_add=True)
-    time = models.DateField(auto_now_add=True)
+    time = models.TimeField(auto_now_add=True)  # Correct
+
     status = models.CharField(max_length=10, choices=STATUS_CHOICES)
 
     def __str__(self):
