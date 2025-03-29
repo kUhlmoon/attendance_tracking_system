@@ -4,6 +4,16 @@ from users.models import CustomUser
 # i created my models here
 
 
+class Unit(models.Model):
+    code = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=100)
+    students = models.ManyToManyField(
+        CustomUser, related_name="registered_units")
+
+    def __str__(self):
+        return f"{self.code} - {self.name}"
+
+
 class Attendance(models.Model):
     STATUS_CHOICES = [
         ('present', 'Present'),
