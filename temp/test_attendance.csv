@@ -1,8 +1,4 @@
-student_id,date,time,status
-BCS-05-0121/2022,2025-03-20,11:00,present
-BCS-05-0122/2022,2025-03-20,11:00,absent
-BCS-05-0100/2023,2025-03-20,11:00,present
-BCS-03-0101/2023,2025-03-20,11:00,absent
-BCS-05-0103/2023,2025-03-20,11:00,present
-BCM-05-0104/2022,2025-03-20,11:00,absent
-
+admission_number,first_name,last_name,email
+BCS-05-001/2023,Jane,Doe,jane@example.com
+BCS-05-002/2023,John,Smith,john@example.com
+BCS-05-003/2023,Alice,Johnson,alice@example.com

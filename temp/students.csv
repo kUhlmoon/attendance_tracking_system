@@ -1,0 +1,4 @@
+admission_number,first_name,last_name,email,is_student
+BCS-05-001/2023,Jane,Doe,jane@example.com,true
+BCS-05-002/2023,John,Smith,john@example.com,true
+BCS-05-003/2023,Alice,Johnson,alice@example.com,true

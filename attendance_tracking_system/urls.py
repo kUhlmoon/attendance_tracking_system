@@ -22,18 +22,19 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
-# i redirected '/' to 'admin' automatically
-
-
+# Redirect '/' to admin login for now
 def redirect_to_admin(request):
     return redirect('/admin/')
 
-
 urlpatterns = [
-    path('', redirect_to_admin),  # root URL redirects to admin login
+    path('', redirect_to_admin),
     path('admin/', admin.site.urls),
-    path('api/auth/', include('users.urls')),  # user authentication
-    path('api/attendance/', include('attendance.urls')),  # attendance APIs
+
+    # JWT auth endpoints
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
+    # App-specific APIs
+    path('api/auth/', include('users.urls')),            # Auth endpoints (register/login)
+    path('api/attendance/', include('attendance.urls')), # Attendance API
 ]
