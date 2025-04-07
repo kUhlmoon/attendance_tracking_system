@@ -1,0 +1,9 @@
+student_id,unit_code,date,status
+seanpaul,CS101,2025-04-07,Present
+nyamari,CS101,2025-04-07,Absent
+seanpaul,CS102,2025-04-07,Absent
+nyamari,CS102,2025-04-07,Present
+seanpaul,CS201,2025-04-07,Present
+nyamari,CS201,2025-04-07,Present
+seanpaul,CS301,2025-04-07,Absent
+nyamari,CS301,2025-04-07,Present

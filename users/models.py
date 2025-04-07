@@ -11,7 +11,7 @@ class CustomUser(AbstractUser):
 
     student_id = models.CharField(max_length=20, unique=True, null=True, blank=True)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='student')
-
+    is_active = models.BooleanField(default=True)
     @property
     def is_student(self):
         return self.role == 'student'

@@ -11,7 +11,7 @@ logger.setLevel(logging.INFO)
 # Optional: configure logging output to file or console if not already handled in settings
 # logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def process_csv(file_path):
+def process_csv(file_path, lecturer_user=None):
     """
     Processes an uploaded CSV file and saves attendance records per unit.
 
@@ -38,7 +38,7 @@ def process_csv(file_path):
                 status = row["status"].strip().lower()
 
                 # Validate status
-                if status not in ["present", "absent"]:
+                if status not in ["present", "absent", "late"]:
                     errors.append(f"Invalid status '{status}' in row: {row}")
                     continue
 
@@ -54,12 +54,18 @@ def process_csv(file_path):
                     errors.append(f"Unit {unit_code} not found.")
                     continue
 
+                # Assign lecturer if not already assigned
+                if lecturer_user and not unit.lecturer:
+                    unit.lecturer = lecturer_user
+                    unit.save()
+                    logger.info(f"Assigned lecturer {lecturer_user.username} to unit {unit_code}")
+
                 # Check if student is registered for this unit
                 if student not in unit.students.all():
                     errors.append(f"Student {student_id} not registered for unit {unit_code}.")
                     continue
 
-                # Parse date with fallback formats
+                # Parse date
                 date_str = row["date"].strip()
                 date = None
                 for fmt in ("%Y-%m-%d", "%d/%m/%Y"):
@@ -72,7 +78,7 @@ def process_csv(file_path):
                     errors.append(f"Invalid date format in row: {row}")
                     continue
 
-                # Prevent duplicates
+                # Create or skip duplicate
                 attendance, created = Attendance.objects.get_or_create(
                     student=student,
                     unit=unit,
@@ -88,7 +94,7 @@ def process_csv(file_path):
             except Exception as e:
                 errors.append(f"Unexpected error processing row {row}: {e}")
 
-        # Log errors to file and logger
+        # Log errors to file
         if errors:
             log_filename = f"error_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
             with open(log_filename, "w", encoding="utf-8") as error_file:

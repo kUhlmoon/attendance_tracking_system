@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "attendance/base.html" %}
 
 {% block content %}
 <div class="container mt-5">
@@ -10,8 +10,8 @@
             <tr>
                 <th>Student ID</th>
                 <th>Name</th>
+                <th>Unit</th>
                 <th>Date</th>
-                <th>Time</th>
                 <th>Status</th>
             </tr>
         </thead>
@@ -20,8 +20,8 @@
             <tr>
                 <td>{{ record.student.student_id }}</td>
                 <td>{{ record.student.username }}</td>
+                <td>{{ record.unit.code }}</td>
                 <td>{{ record.date }}</td>
-                <td>{{ record.time }}</td>
                 <td>
                     {% if record.status == "present" %}
                     <span class="badge bg-success">Present</span>
