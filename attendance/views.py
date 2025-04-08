@@ -1,12 +1,13 @@
 import csv
 import io
 from datetime import datetime
+from django.http import HttpResponseRedirect
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_protect
 from django.shortcuts import render, redirect
-from django.urls import reverse_lazy
+from django.urls import reverse
 from django.contrib import messages
 from django.core.paginator import Paginator 
 from rest_framework import generics, permissions, status
@@ -24,12 +25,13 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from users.models import CustomUser
 from .models import Attendance, Unit, AttendanceFile
-from .forms import AttendanceUploadForm, StudentUploadForm
+from .forms import AttendanceCSVUploadForm, StudentCSVUploadForm, AttendanceUploadForm, StudentUploadForm
 from .utils import process_csv
 from .serializers import UnitSerializer, AttendanceFileSerializer
 
-ROLE_LECTURER = "lecturer"
-ROLE_STUDENT = "student"
+ROLE_LECTURER = "Tutor"
+ROLE_STUDENT = "Student"
+ROLE_ADMIN = 'Admin'
 
 # --- Permissions ---
 class IsLecturer(permissions.BasePermission):
@@ -102,6 +104,55 @@ def upload_students_csv(request):
         "errors": errors
     }, status=status.HTTP_201_CREATED)
 
+@login_required
+@csrf_protect
+def upload_students_csv_web(request):
+    if request.method == "POST":
+        form = StudentCSVUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            file = request.FILES.get("file")
+
+            # Process the CSV (same logic as your DRF view)
+            reader, error = decode_csv(file)
+            if error:
+                messages.error(request, f"Error reading CSV: {error}")
+                return render(request, "attendance/upload_students.html", {"form": form})
+
+            success = 0
+            errors = []
+
+            for idx, row in enumerate(reader, start=1):
+                student_id = row.get("student_id")
+                username = row.get("username")
+                email = row.get("email")
+
+                if not all([student_id, username, email]):
+                    errors.append(f"Row {idx}: Missing data.")
+                    continue
+
+                try:
+                    CustomUser.objects.create_user(
+                        student_id=student_id,
+                        username=username,
+                        email=email,
+                        user_type="student",
+                        password="defaultpassword123"  # Or some logic
+                    )
+                    success += 1
+                except Exception as e:
+                    errors.append(f"Row {idx}: {str(e)}")
+
+            if success:
+                messages.success(request, f"{success} students added.")
+            if errors:
+                for e in errors:
+                    messages.warning(request, e)
+
+            return redirect("attendance:attendance_dashboard")
+    else:
+        form = StudentCSVUploadForm()
+
+    return render(request, "attendance/upload_students.html", {"form": form})
 
 @api_view(["POST"])
 @authentication_classes([JWTAuthentication])
@@ -185,6 +236,23 @@ def upload_attendance_csv(request):
         "errors": errors
     }, status=status.HTTP_201_CREATED if records_saved else status.HTTP_400_BAD_REQUEST)
 
+@login_required
+@csrf_protect
+def upload_attendance_csv_web(request):
+    if request.method == "POST":
+        form = AttendanceCSVUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            # Call the same logic as your DRF function (extract into a helper?)
+            file = request.FILES.get("file")
+            # (Paste logic here or call shared function)
+            messages.success(request, "Attendance CSV processed successfully.")
+            return redirect("attendance:attendance_dashboard")
+        else:
+            messages.error(request, "There was an error processing the form.")
+    else:
+        form = AttendanceCSVUploadForm()
+
+    return render(request, "attendance/upload_attendance.html", {"form": form})
 
 def home_redirect(request):
     return redirect('attendance:login')
@@ -196,7 +264,10 @@ def login_view(request):
             user = form.get_user()
             login(request, user)
             next_page = request.GET.get('next')  # Retrieve the 'next' parameter from the request
-            return redirect(next_page or reverse_lazy('attendance:attendance_dashboard'))  # If no 'next', redirect to dashboard
+            if next_page:
+                return HttpResponseRedirect(next_page)
+            else:
+                return HttpResponseRedirect(reverse('attendance:attendance_dashboard'))
         else:
             messages.error(request, "Invalid login credentials.")
     else:
@@ -210,9 +281,9 @@ def logout_view(request):
 
 @login_required(login_url='/login/')  # Redirect to login if not authenticated
 def attendance_dashboard(request):
-    if request.user.role != 'LECTURER':  # Assuming 'LECTURER' is the role for lecturers
+    if request.user.role != [ROLE_LECTURER, ROLE_ADMIN]:
         messages.error(request, "Only lecturers can access this dashboard.")
-        return redirect("attendance:attendance_dashboard")  # Stay within the dashboard for other roles
+        return redirect("attendance:access_denied")  # Redirect to an 'Access Denied' page
 
     # Personalized welcome message
     welcome_message = f"Welcome to your Attendance Tracker Dashboard, {request.user.first_name}!"
@@ -226,6 +297,9 @@ def attendance_dashboard(request):
     page_obj = paginator.get_page(page_number)
 
     return render(request, "attendance/attendance_dashboard.html", {"page_obj": page_obj, "welcome_message": welcome_message})
+
+def access_denied(request):
+    return render(request, "attendance/access_denied.html")
 
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])

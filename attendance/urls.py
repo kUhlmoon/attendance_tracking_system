@@ -1,4 +1,3 @@
-# attendance/urls.py
 
 from django.urls import path
 from . import views
@@ -28,7 +27,8 @@ urlpatterns = [
     path('login/', login_view, name='login'),  # Add login path
     path('logout/', logout_view, name='logout'),  # Add logout path
     path('dashboard/', attendance_dashboard, name='attendance_dashboard'),
-    path('upload-attendance/', views.upload_attendance_csv, name='upload_attendance_csv'),
-    path('upload-students/', views.upload_students_csv, name='upload_students_csv'),
+    path('access-denied/', views.access_denied, name='access_denied'),
+    path('upload-attendance/', views.upload_attendance_csv_web, name='upload_attendance_csv'),
+    path('upload-students/', views.upload_students_csv_web, name='upload_students_csv'),
     path('predict/', predict_absenteeism, name='predict_absenteeism'),
 ]

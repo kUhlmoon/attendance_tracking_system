@@ -24,3 +24,9 @@ class UnitForm(forms.ModelForm):
             id__in=Student.objects.values_list('user_id', flat=True)
         )
         self.fields['students'].queryset = valid_student_users
+
+class AttendanceCSVUploadForm(forms.Form):
+    file = forms.FileField()
+
+class StudentCSVUploadForm(forms.Form):
+    file = forms.FileField()

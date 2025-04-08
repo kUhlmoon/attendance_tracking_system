@@ -44,13 +44,13 @@ SIMPLE_JWT = {
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # For handling CORS
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',  # For message flashing
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',  # For handling CORS
 ]
 
 # Session settings
@@ -114,4 +114,4 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Login URLs
 LOGIN_URL = 'attendance:login'  # Path to login page
-LOGIN_REDIRECT_URL = reverse_lazy('attendance:attendance_dashboard')  # Path to redirect after login
+LOGIN_REDIRECT_URL = 'attendance:attendance_dashboard'  # Path to redirect after login

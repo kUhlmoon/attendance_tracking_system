@@ -32,7 +32,7 @@ urlpatterns = [
 
     # App-specific APIs
     path('api/auth/', include('users.urls')),  # Auth endpoints (register/login)
-    path('api/attendance/', include('attendance.urls')),  # Attendance API
+    #path('api/attendance/', include('attendance.urls')),  # Attendance API
 
     # Include attendance URLs under /attendance/ with a namespace
     path('attendance/', include(('attendance.urls', 'attendance'), namespace='attendance')),
