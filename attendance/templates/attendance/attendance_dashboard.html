@@ -1,10 +1,14 @@
+<!-- attendance/templates/attendance/attendance_dashboard.html -->
+
 {% extends "attendance/base.html" %}
 
 {% block content %}
 <div class="container mt-5">
-    <h2 class="mb-4">Attendance Records</h2>
+    <h2 class="mb-4">{{ welcome_message }}</h2>  <!-- Display personalized welcome message -->
 
-    {% if records %}
+    <h3 class="mb-4">Attendance Records</h3>
+
+    {% if page_obj %}
     <table class="table table-bordered table-striped">
         <thead class="table-dark">
             <tr>
@@ -16,7 +20,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for record in records %}
+            {% for record in page_obj %}
             <tr>
                 <td>{{ record.student.student_id }}</td>
                 <td>{{ record.student.username }}</td>

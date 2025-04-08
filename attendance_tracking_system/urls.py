@@ -20,8 +20,10 @@ from django.shortcuts import redirect
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
+    # Redirect the root URL to admin
     path('', lambda request: redirect('admin/')),
-    
+
+    # Admin panel
     path('admin/', admin.site.urls),
 
     # JWT auth endpoints

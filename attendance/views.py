@@ -11,6 +11,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator 
 from rest_framework import generics, permissions, status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from sklearn.linear_model import LogisticRegression
@@ -209,9 +210,12 @@ def logout_view(request):
 
 @login_required(login_url='/login/')  # Redirect to login if not authenticated
 def attendance_dashboard(request):
-    if request.user.role != ROLE_LECTURER:
+    if request.user.role != 'LECTURER':  # Assuming 'LECTURER' is the role for lecturers
         messages.error(request, "Only lecturers can access this dashboard.")
         return redirect("attendance:attendance_dashboard")  # Stay within the dashboard for other roles
+
+    # Personalized welcome message
+    welcome_message = f"Welcome to your Attendance Tracker Dashboard, {request.user.first_name}!"
 
     units = request.user.units.all()
     records = Attendance.objects.filter(unit__in=units).select_related("student", "unit").order_by("-date")
@@ -221,7 +225,7 @@ def attendance_dashboard(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, "attendance/attendance_dashboard.html", {"page_obj": page_obj})
+    return render(request, "attendance/attendance_dashboard.html", {"page_obj": page_obj, "welcome_message": welcome_message})
 
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])
@@ -285,6 +289,10 @@ class AttendanceFileUploadView(generics.ListCreateAPIView):
 
 @api_view(['GET'])
 def predict_absenteeism(request):
+    # Check if the user is a lecturer
+    if not request.user.is_lecturer:  # or use request.user.role == 'LECTURER'
+        raise PermissionDenied("You do not have permission to access this data.")
+    
     # Mock dataset — replace with real DB queries later
     data = {
         'student_id': [1, 2, 3, 4, 5],
@@ -313,6 +321,7 @@ def predict_absenteeism(request):
     df['prediction'] = full_predictions
 
     results = df[['student_id', 'unit1', 'unit2', 'unit3', 'prediction']]
+
     return Response({
         "accuracy": accuracy,
         "predictions": results.to_dict(orient="records")

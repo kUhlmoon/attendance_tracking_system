@@ -16,23 +16,25 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'users',
+    'users',  # Your custom user model app
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
-    'attendance',
-    'corsheaders',
+    'attendance',  # Attendance app
+    'corsheaders',  # For Cross-Origin Resource Sharing
 ]
 
+# REST framework settings (authentication and pagination)
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # Using JWT for authentication
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
 }
 
+# JWT settings
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
@@ -46,27 +48,23 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',  # For message flashing
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # For handling CORS
 ]
 
-# Ensure that the session data is stored in the database (for consistency across multiple devices/browsers)
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # This stores session data in the database
-
-# The cookie used to store the session ID, which ensures that users remain logged in across requests
-SESSION_COOKIE_NAME = 'sessionid'  # This is the default, but it’s good practice to explicitly mention it
-
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Keep session active even after the browser is closed
+# Session settings
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Store session data in the database
+SESSION_COOKIE_NAME = 'sessionid'  # Session cookie name
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Keep session active after browser close
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # Session cookie lifespan (7 days in seconds)
-
 
 ROOT_URLCONF = 'attendance_tracking_system.urls'
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [],  # Add any directories for templates here if needed
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -104,17 +102,16 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = True  # Allow CORS for all domains (be cautious in production)
 
 STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-AUTH_USER_MODEL = 'users.CustomUser'
+AUTH_USER_MODEL = 'users.CustomUser'  # Ensure you're using a custom user model if needed
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-LOGIN_URL = 'attendance:login'
-LOGIN_REDIRECT_URL = reverse_lazy('attendance:attendance_dashboard')
-LOGOUT_REDIRECT_URL = '/accounts/login/'
-
+# Login URLs
+LOGIN_URL = 'attendance:login'  # Path to login page
+LOGIN_REDIRECT_URL = reverse_lazy('attendance:attendance_dashboard')  # Path to redirect after login
