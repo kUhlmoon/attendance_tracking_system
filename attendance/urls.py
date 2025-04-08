@@ -1,27 +1,24 @@
 from django.urls import path
+from . import views
 from .views import (
     UnitListCreateView,
     AttendanceFileUploadView,
     upload_students_csv,
     upload_attendance_csv,
-    attendance_list,
-    upload_attendance,
-    upload_students,
     attendance_dashboard,
     predict_absenteeism,
+    login_view,
+    logout_view,
 )
 
-urlpatterns = [
-    # API endpoints (JWT-protected)
-    path('api/units/', UnitListCreateView.as_view(), name='unit-list-create'),
-    path('api/students/upload_csv/', upload_students_csv, name='upload_students_csv'),
-    path('api/upload_csv/', upload_attendance_csv, name='upload_attendance_csv'),
-    path('api/upload_file/', AttendanceFileUploadView.as_view(), name='attendance_file_upload'),
-    path('api/list/', attendance_list, name='attendance_list'),
+app_name = 'attendance'
 
-    # Web views (HTML-based forms)
-    path('upload/', upload_attendance, name='upload_attendance'),
-    path('upload_students/', upload_students, name='upload_students'),
+urlpatterns = [
+    # Web views
+    path('login/', login_view, name='login'),  # Add login path
+    path('logout/', logout_view, name='logout'),  # Add logout path
     path('dashboard/', attendance_dashboard, name='attendance_dashboard'),
+    path('upload-attendance/', views.upload_attendance_csv, name='upload_attendance_csv'),
+    path('upload-students/', views.upload_students_csv, name='upload_students_csv'),
     path('predict/', predict_absenteeism, name='predict_absenteeism'),
 ]

@@ -1,10 +1,14 @@
 import csv
 import io
 from datetime import datetime
+from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render, redirect
+from django.urls import reverse_lazy
 from django.contrib import messages
+from django.core.paginator import Paginator 
 from rest_framework import generics, permissions, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -18,7 +22,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from users.models import CustomUser
-from .models import Attendance, Unit, AttendanceFile, Student
+from .models import Attendance, Unit, AttendanceFile
 from .forms import AttendanceUploadForm, StudentUploadForm
 from .utils import process_csv
 from .serializers import UnitSerializer, AttendanceFileSerializer
@@ -102,174 +106,164 @@ def upload_students_csv(request):
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated, IsLecturer])
 def upload_attendance_csv(request):
-    if "file" not in request.FILES:
+    file = request.FILES.get("file")
+    if not file:
         return Response({"error": "No file provided"}, status=400)
 
-    reader, error = decode_csv(request.FILES["file"])
+    # Save file for record-keeping
+    attendance_file = AttendanceFile.objects.create(
+        file=file,
+        uploaded_by=request.user
+    )
+
+    reader, error = decode_csv(attendance_file.file)
     if error:
         return Response({"error": f"Error reading CSV: {error}"}, status=500)
 
-    errors, records_saved = [], 0
+    records_saved = 0
+    errors = []
 
-    for row in reader:
+    for idx, row in enumerate(reader, start=1):
         student_id = row.get("student_id")
         unit_code = row.get("unit_code")
         date_str = row.get("date")
         status_str = row.get("status", "").strip().lower()
 
+        # Basic validation
         if not all([student_id, unit_code, date_str, status_str]):
-            errors.append(f"Missing data: {row}")
+            errors.append(f"Row {idx}: Missing required fields.")
             continue
 
         if status_str not in ["present", "absent"]:
-            errors.append(f"Invalid status '{status_str}' for row: {row}")
+            errors.append(f"Row {idx}: Invalid status '{status_str}'. Expected 'present' or 'absent'.")
             continue
 
         try:
             student = CustomUser.objects.get(student_id=student_id)
+        except CustomUser.DoesNotExist:
+            errors.append(f"Row {idx}: Student '{student_id}' not found.")
+            continue
+
+        try:
             unit = Unit.objects.get(code=unit_code)
+        except Unit.DoesNotExist:
+            errors.append(f"Row {idx}: Unit '{unit_code}' not found.")
+            continue
 
-            if unit.lecturer != request.user:
-                errors.append(f"Unauthorized to upload for {unit_code}")
-                continue
+        if unit.lecturer != request.user:
+            errors.append(f"Row {idx}: Unauthorized to upload attendance for unit '{unit_code}'.")
+            continue
 
-            if student not in unit.students.all():
-                errors.append(f"Student {student_id} not enrolled in {unit_code}")
-                continue
+        if student not in unit.students.all():
+            errors.append(f"Row {idx}: Student '{student_id}' not registered in unit '{unit_code}'.")
+            continue
 
+        try:
             date = datetime.strptime(date_str, "%Y-%m-%d").date()
-            _, created = Attendance.objects.get_or_create(
+        except ValueError:
+            errors.append(f"Row {idx}: Invalid date format '{date_str}'. Expected YYYY-MM-DD.")
+            continue
+
+        try:
+            obj, created = Attendance.objects.get_or_create(
                 student=student,
                 unit=unit,
                 date=date,
                 defaults={"status": status_str}
             )
-
             if not created:
-                errors.append(f"Duplicate entry for {student_id} on {date}")
+                errors.append(f"Row {idx}: Attendance already recorded for student '{student_id}' on {date}.")
             else:
                 records_saved += 1
-
-        except CustomUser.DoesNotExist:
-            errors.append(f"Student {student_id} not found")
-        except Unit.DoesNotExist:
-            errors.append(f"Unit {unit_code} not found")
         except Exception as e:
-            errors.append(f"Error processing row {row}: {str(e)}")
+            errors.append(f"Row {idx}: Unexpected error: {str(e)}")
 
     return Response({
-        "message": f"{records_saved} attendance records uploaded.",
+        "file_id": attendance_file.id,
+        "message": f"{records_saved} attendance records successfully uploaded.",
         "errors": errors
     }, status=status.HTTP_201_CREATED if records_saved else status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(["GET"])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated, IsStudent])
-def attendance_list(request):
-    records = Attendance.objects.filter(student=request.user).select_related("student", "unit").order_by("-date")
+def home_redirect(request):
+    return redirect('attendance:login')
 
-    data = [{
-        "student": rec.student.username,
-        "student_id": rec.student.student_id,
-        "unit": rec.unit.code,
-        "date": rec.date.strftime("%Y-%m-%d"),
-        "status": rec.status
-    } for rec in records]
-
-    return Response({"attendance_records": data})
-
-# --- Optional: Legacy Web Views (for Admins) ---
-
-@login_required
-def upload_attendance(request):
+def login_view(request):
     if request.method == "POST":
-        form = AttendanceUploadForm(request.POST, request.FILES)
+        form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
-            file_instance = form.save(commit=False)  # Delay saving
-            file_instance.uploaded_by = request.user  # Set the user
-            file_instance.save()  # Now save to DB
-            # Pass the logged-in user to process_csv to assign lecturer automatically
-            process_csv(file_instance.file.path, lecturer_user=request.user)
-            messages.success(request, "Attendance uploaded successfully!")
-            return redirect("attendance_dashboard")
-        messages.error(request, "Invalid file. Try again.")
+            user = form.get_user()
+            login(request, user)
+            next_page = request.GET.get('next')  # Retrieve the 'next' parameter from the request
+            return redirect(next_page or reverse_lazy('attendance:attendance_dashboard'))  # If no 'next', redirect to dashboard
+        else:
+            messages.error(request, "Invalid login credentials.")
     else:
-        form = AttendanceUploadForm()
-    return render(request, "attendance/upload_attendance.html", {"form": form})
+        form = AuthenticationForm()
+    
+    return render(request, 'attendance/login.html', {'form': form})
+# Logout view
+def logout_view(request):
+    logout(request)
+    return redirect('attendance:login')  # Redirect to login page after logout
 
-
-@login_required
-def upload_students(request):
-    if request.user.role != ROLE_LECTURER:
-        messages.error(request, "Only lecturers can upload students.")
-        return redirect("attendance_dashboard")
-
-    if request.method == "POST":
-        form = StudentUploadForm(request.POST, request.FILES)
-        if form.is_valid():
-            file = request.FILES["file"]
-            reader, error = decode_csv(file)
-            if error:
-                messages.error(request, f"CSV Read Error: {error}")
-                return redirect("upload_students")
-
-            units = Unit.objects.all()
-            if not units.exists():
-                messages.error(request, "No units available to assign students.")
-                return redirect("upload_students")
-
-            registered, errors = [], []
-
-            for row in reader:
-                admission_number = row.get("admission_number")
-                first_name = row.get("first_name")
-                last_name = row.get("last_name")
-                email = row.get("email")
-
-                if not all([admission_number, first_name, last_name, email]):
-                    errors.append(f"Incomplete data: {row}")
-                    continue
-
-                student, created = CustomUser.objects.get_or_create(
-                    student_id=admission_number,
-                    defaults={
-                        "username": admission_number,
-                        "first_name": first_name,
-                        "last_name": last_name,
-                        "email": email,
-                        "role": ROLE_STUDENT,
-                    }
-                )
-
-                if not created:
-                    errors.append(f"Student {admission_number} already exists.")
-                else:
-                    registered.append(admission_number)
-
-                student.registered_units.set(units)
-                student.save()
-
-            if registered:
-                messages.success(request, f"{len(registered)} students uploaded.")
-            for error in errors:
-                messages.error(request, error)
-            return redirect("upload_students")
-
-    else:
-        form = StudentUploadForm()
-
-    return render(request, "attendance/upload_students.html", {"form": form})
-
-
-@login_required
+@login_required(login_url='/login/')  # Redirect to login if not authenticated
 def attendance_dashboard(request):
     if request.user.role != ROLE_LECTURER:
         messages.error(request, "Only lecturers can access this dashboard.")
-        return redirect("attendance_dashboard")
+        return redirect("attendance:attendance_dashboard")  # Stay within the dashboard for other roles
 
-    records = Attendance.objects.filter(unit__lecturer=request.user).select_related("student", "unit").order_by("-date")
-    return render(request, "attendance/attendance_dashboard.html", {"records": records})
+    units = request.user.units.all()
+    records = Attendance.objects.filter(unit__in=units).select_related("student", "unit").order_by("-date")
+
+    # Pagination setup
+    paginator = Paginator(records, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "attendance/attendance_dashboard.html", {"page_obj": page_obj})
+
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated, IsLecturer])
+def attendance_list(request):
+    unit_code = request.GET.get('unit_code')
+    date_str = request.GET.get('date')
+
+    # Get all units for the logged-in lecturer
+    lecturer_units = Unit.objects.filter(lecturer=request.user)
+
+    # Filter attendance records by the lecturer's units
+    records = Attendance.objects.filter(unit__in=lecturer_units).select_related("student", "unit")
+
+    # Optional filters
+    if unit_code:
+        records = records.filter(unit__code=unit_code)
+    if date_str:
+        try:
+            date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
+            records = records.filter(date=date_obj)
+        except ValueError:
+            return Response({"error": "Invalid date format. Use YYYY-MM-DD"}, status=400)
+
+    # Format results
+    results = []
+    for record in records:
+        results.append({
+            "student_id": record.student.student_id,
+            "student_name": f"{record.student.first_name} {record.student.last_name}",
+            "unit": record.unit.code,
+            "date": record.date.strftime("%Y-%m-%d"),
+            "status": record.status,
+        })
+
+    return Response({
+        "count": len(results),
+        "records": results
+    }, status=200)
+
+
+    return render(request, "attendance/attendance_dashboard.html", {"page_obj": page_obj})
 
 # --- DRF Generic Views ---
 
@@ -286,6 +280,7 @@ class AttendanceFileUploadView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(uploaded_by=self.request.user)
+
 
 
 @api_view(['GET'])

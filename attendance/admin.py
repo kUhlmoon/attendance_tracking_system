@@ -20,12 +20,12 @@ def process_attendance_csv(file_path):
             student_id = row.get('student_id')
             unit_code = row.get('unit_code')
             date = row.get('date')
-            status = row.get('status').strip().lower()
+            status = row.get('status','').strip().lower()
 
             if status not in ['present', 'absent']:
                 print(f"Invalid status '{status}' for student {student_id} on {date}. Skipping.")
                 continue
-            
+
             print(f"Processing: student={student_id}, unit={unit_code}, date={date}, status={status}")
 
             try:

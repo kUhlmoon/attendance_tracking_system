@@ -16,22 +16,22 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link active" href="{% url 'attendance_dashboard' %}">Dashboard</a>
+                        <a class="nav-link active" href="{% url 'attendance:attendance_dashboard' %}">Dashboard</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'upload_attendance' %}">Upload Attendance</a>
+                        <a class="nav-link" href="{% url 'attendance:upload_attendance_csv' %}">Upload Attendance</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'upload_students' %}">Upload Students</a>
+                        <a class="nav-link" href="{% url 'attendance:upload_students_csv' %}">Upload Students</a>
                     </li>
                     <li class="nav-item">
                         {% if user.is_authenticated %}
-                            <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                            <form method="post" action="{% url 'attendance:logout' %}" style="display: inline;">
                                 {% csrf_token %}
                                 <button type="submit" class="nav-link btn btn-link" style="padding: 0; margin: 0; color: #fff; text-decoration: none;">Logout</button>
                             </form>
                         {% else %}
-                            <a class="nav-link" href="{% url 'login' %}">Login</a>
+                            <a class="nav-link" href="{% url 'attendance:login' %}">Login</a>
                         {% endif %}
                     </li>
                 </ul>

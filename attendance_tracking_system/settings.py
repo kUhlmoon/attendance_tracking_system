@@ -51,6 +51,16 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
 ]
 
+# Ensure that the session data is stored in the database (for consistency across multiple devices/browsers)
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # This stores session data in the database
+
+# The cookie used to store the session ID, which ensures that users remain logged in across requests
+SESSION_COOKIE_NAME = 'sessionid'  # This is the default, but it’s good practice to explicitly mention it
+
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Keep session active even after the browser is closed
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # Session cookie lifespan (7 days in seconds)
+
+
 ROOT_URLCONF = 'attendance_tracking_system.urls'
 
 TEMPLATES = [
@@ -104,6 +114,7 @@ AUTH_USER_MODEL = 'users.CustomUser'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = reverse_lazy('attendance_dashboard')
+LOGIN_URL = 'attendance:login'
+LOGIN_REDIRECT_URL = reverse_lazy('attendance:attendance_dashboard')
 LOGOUT_REDIRECT_URL = '/accounts/login/'
+
