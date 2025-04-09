@@ -1,10 +1,9 @@
-<!-- attendance/templates/attendance/attendance_dashboard.html -->
 
 {% extends "attendance/base.html" %}
 
 {% block content %}
 <div class="container mt-5">
-    <h2 class="mb-4">{{ welcome_message }}</h2>  <!-- Display personalized welcome message -->
+    <h2 class="mb-4">{{ welcome_message }}</h2>
 
     <h3 class="mb-4">Attendance Records</h3>
 
@@ -48,5 +47,38 @@
     <div class="mt-3">
         <a href="{% url 'attendance:upload_attendance_csv' %}" class="btn btn-primary">Upload More Attendance</a>
     </div>
+
+    <hr>
+    <h3 class="mt-5">Predicted Absenteeism Insights</h3>
+    <p><strong>Model Accuracy:</strong> {{ prediction_accuracy }}%</p>
+
+    <table class="table table-hover table-bordered">
+        <thead class="table-light">
+            <tr>
+                <th>Student ID</th>
+                <th>Unit 1</th>
+                <th>Unit 2</th>
+                <th>Unit 3</th>
+                <th>Prediction</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in prediction_results %}
+            <tr>
+                <td>{{ row.student_id }}</td>
+                <td>{{ row.unit1 }}</td>
+                <td>{{ row.unit2 }}</td>
+                <td>{{ row.unit3 }}</td>
+                <td>
+                    {% if row.prediction == 1 %}
+                    <span class="badge bg-danger">Likely Absent</span>
+                    {% else %}
+                    <span class="badge bg-success">Likely Present</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}

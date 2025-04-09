@@ -29,9 +29,9 @@ from .forms import AttendanceCSVUploadForm, StudentCSVUploadForm, AttendanceUplo
 from .utils import process_csv
 from .serializers import UnitSerializer, AttendanceFileSerializer
 
-ROLE_LECTURER = "Tutor"
-ROLE_STUDENT = "Student"
-ROLE_ADMIN = 'Admin'
+ROLE_LECTURER = "tutor"
+ROLE_ADMIN = 'admin'
+ROLE_STUDENT = 'student'
 
 # --- Permissions ---
 class IsLecturer(permissions.BasePermission):
@@ -281,7 +281,7 @@ def logout_view(request):
 
 @login_required(login_url='/login/')  # Redirect to login if not authenticated
 def attendance_dashboard(request):
-    if request.user.role != [ROLE_LECTURER, ROLE_ADMIN]:
+    if request.user.role not in [ROLE_LECTURER, ROLE_ADMIN]:
         messages.error(request, "Only lecturers can access this dashboard.")
         return redirect("attendance:access_denied")  # Redirect to an 'Access Denied' page
 
@@ -296,7 +296,39 @@ def attendance_dashboard(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, "attendance/attendance_dashboard.html", {"page_obj": page_obj, "welcome_message": welcome_message})
+    # Mock Absenteeism Prediction
+    data = {
+        'student_id': [1, 2, 3, 4, 5],
+        'unit1': [1, 1, 0, 1, 0],
+        'unit2': [1, 0, 0, 1, 0],
+        'unit3': [1, 1, 0, 1, 0],
+        'absent_next_week': [0, 0, 1, 0, 1]
+    }
+
+    df = pd.DataFrame(data)
+    X = df[['unit1', 'unit2', 'unit3']]
+    y = df['absent_next_week']
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    model = LogisticRegression()
+    model.fit(X_train, y_train)
+
+    predictions = model.predict(X_test)
+    accuracy = accuracy_score(y_test, predictions)
+
+    df['prediction'] = model.predict(X)
+    prediction_results = df[['student_id', 'unit1', 'unit2', 'unit3', 'prediction']].to_dict(orient='records')
+
+    return render(
+        request,
+        "attendance/attendance_dashboard.html",
+        {
+            "page_obj": page_obj,
+            "welcome_message": welcome_message,
+            "prediction_results": prediction_results,
+            "prediction_accuracy": round(accuracy * 100, 2)
+        }
+    )
 
 def access_denied(request):
     return render(request, "attendance/access_denied.html")

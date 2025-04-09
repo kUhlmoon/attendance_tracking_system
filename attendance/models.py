@@ -1,3 +1,4 @@
+# attendance/models.py
 from django.db import models
 from django.conf import settings
 from users.models import CustomUser
@@ -14,12 +15,13 @@ class Student(models.Model):
 class Unit(models.Model):
     code = models.CharField(max_length=20, unique=True)
     name = models.CharField(max_length=100)
+
+    # Remove limit_choices_to from the lecturer field
     lecturer = models.ForeignKey(
         CustomUser,
         on_delete=models.CASCADE,
         null=True,
         blank=True,
-        limit_choices_to={'role': 'tutor'}
     )
     students = models.ManyToManyField(
         CustomUser,

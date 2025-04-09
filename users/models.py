@@ -12,6 +12,9 @@ class CustomUser(AbstractUser):
     student_id = models.CharField(max_length=20, unique=True, null=True, blank=True)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='student')
     is_active = models.BooleanField(default=True)
+
+    units = models.ManyToManyField("attendance.Unit", related_name="lecturers", blank=True)
+
     @property
     def is_student(self):
         return self.role == 'student'
